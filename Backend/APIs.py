@@ -137,5 +137,51 @@ def predstate():
     return("Expected Confirmed cases in " + State + " by " + str((datetime.datetime.today().date()+timedelta(days=days)))+" is "+str(val2))
 
 
+@app.route('/application_form',methods=['POST'])
+def application_form():
+
+    cur = mysql.connection.cursor()
+
+    first_name = request.get_json()['first_name']
+    last_name = request.get_json()['last_name']
+    age = request.get_json()['age']
+    destination = request.get_json()['destination']
+    aadhar_number = request.get_json()['aadhar_number']
+
+    try:
+        cur.execute("CREATE TABLE IF NOT EXISTS  applicants (first_name varchar(50), last_name varchar(50), age integer(10), destination varchar(50), aadhar_number varchar(50));")
+        cur.execute("INSERT INTO applicants (first_name, last_name, age, destination, aadhar_number) VALUES ('" + 
+            str(first_name) + "', '" + 
+            str(last_name) + "', '" + 
+            str(age) + "', '" + 
+            str(destination) + "','" + 
+            str(aadhar_number) + "')")
+
+        mysql.connection.commit()
+        return 'success'
+    
+    except MySQLdb.Error:
+        return ("aadhar already registered")
+
+@app.route('/coordinates', methods = ["POST"])
+def coordinates():
+    x = request.get_json()["x"]
+    y = request.get_json()["y"]
+    radius = request.get_json()["radius"]
+
+    def return_waypoints(x,y,radius):
+        waypoints = np.zeros((6,2))
+        waypoints[0] = [x + (radius/math.sqrt(3)), y + radius]
+        waypoints[1] = [x + (radius/math.sqrt(3)), y - radius]
+        waypoints[2] = [x - (radius/math.sqrt(3)), y + radius]
+        waypoints[3] = [x - (radius/math.sqrt(3)), y - radius]
+        waypoints[4] = [x - radius, y]
+        waypoints[5] = [x + radius, y]
+        x = list(waypoints[:,0])
+        y = list(waypoints[:,1])
+        return (x,y)
+    
+    return json.dumps(return_waypoints(x,y,radius))        
+ 
 if __name__ == '__main__':
     app.run(debug=True)
