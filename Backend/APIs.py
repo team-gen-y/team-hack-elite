@@ -1,4 +1,3 @@
-  
 from flask import Flask, jsonify, request, json
 from flask_mysqldb import MySQL
 from datetime import datetime
@@ -6,6 +5,9 @@ from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended import (create_access_token)
+import MySQLdb
+import math
+import json
 import pandas as pd
 import numpy as np
 import datetime
@@ -18,9 +20,9 @@ from pandas.plotting import autocorrelation_plot
 app = Flask(__name__)
 
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'password'
+app.config['MYSQL_PASSWORD'] = 'solrock'
 app.config['MYSQL_HOST'] = 'localhost' 
-app.config['MYSQL_DB'] = 'login' 
+app.config['MYSQL_DB'] = 'information' 
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 app.config['JWT_SECRET_KEY'] = 'secret'
 
@@ -54,6 +56,8 @@ for i in range(len(raw_data['Datetime'])):
 statewise = raw_data.groupby('State/UnionTerritory')['Confirmed','Deaths','Cured'].max()
 statewise['Active'] = statewise['Confirmed'] - statewise['Deaths'] - statewise['Cured']
 
+
+
 @app.route('/register', methods=['POST'])
 def register():                                 #register route
     cur = mysql.connection.cursor()
@@ -62,6 +66,7 @@ def register():                                 #register route
     email = request.get_json()['email']
     password = bcrypt.generate_password_hash(request.get_json()['password']).decode('utf-8')
 	
+    cur.execute("CREATE TABLE IF NOT EXISTS  user (first_name varchar(50), last_name varchar(50), email varchar(100), password varchar(100));")
     cur.execute("INSERT INTO user (first_name, last_name, email, password) VALUES ('" + 
 		str(first_name) + "', '" + 
 		str(last_name) + "', '" + 
@@ -69,14 +74,10 @@ def register():                                 #register route
 		str(password) + "')")
     mysql.connection.commit()
 	
-    result = {
-		'first_name' : first_name,
-		'last_name' : last_name,
-		'email' : email,
-		'password' : password,
-	}
 
-    return jsonify({'result' : result})
+    return "success"
+
+
 
 @app.route('/login', methods=['POST'])
 def login():                            #login route
@@ -95,6 +96,9 @@ def login():                            #login route
         result = jsonify({"error":"Invalid username and password"})
     
     return result
+
+
+
 
 @app.route('/country', methods=['POST'])
 def predcountry():
@@ -119,6 +123,9 @@ def predcountry():
     val = country(raw_data,days_in_advance)
     return("Expected confirmed cases by " + str((datetime.datetime.today().date()+timedelta(days=2)))+" are " + str(val))
 
+
+
+
 @app.route('/state',methods=['POST'])
 def predstate():
     days = request.get_json()['days']
@@ -135,6 +142,8 @@ def predstate():
 
     val2 = pred_state(raw_data,State,days)
     return("Expected Confirmed cases in " + State + " by " + str((datetime.datetime.today().date()+timedelta(days=days)))+" is "+str(val2))
+
+
 
 
 @app.route('/application_form',methods=['POST'])
